@@ -3,4 +3,4 @@ RadioBlog
 
 LastFM/Twitter Blogging Tool for Jekyll
 
-[DR3WH0.net]
+[RadioBlog Documentation](http://dr3wh0.net)
