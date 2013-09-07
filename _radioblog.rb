@@ -194,7 +194,7 @@ def get_album(info_url)
 end
 
 def manage_radio(driver, station, q) # resume radio & tweet tracks
-	blog = "http://goo.gl/l8vrty"
+	blog = "http://goo.gl/tQtGNR"
 	infotags = "#lastfm #ruby #webdriver #twurl"
 	tweet = "/1.1/statuses/update.json"
 	config = YAML::load(File.open('_config.yml'))
