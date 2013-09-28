@@ -17,14 +17,19 @@ end
 def load_radio(station) # in Firefox 'lastfm' profile
 	begin
 		driver = Selenium::WebDriver.for :firefox, :profile => 'lastfm'
-		driver.manage.window.resize_to(580, 615)
+		driver.manage.window.resize_to(620, 610)
 		driver.navigate.to "http://last.fm/listen/"
 		element = driver.find_element(:name, "name")
 		element.send_keys "#{station}"
 		element.submit
 		driver
+
 	rescue Selenium::WebDriver::Error::NoSuchElementError
 		puts "ERROR >> load Last.fm >> Please try again."
+		exit
+	rescue Timeout::Error
+		puts "ERROR >> Last.fm timeout >> Please try again."
+		driver.quit
 		exit
 	end
 end
@@ -34,7 +39,7 @@ def shorten(url, blog) # create short urls with goo.gl
 		urlshortener = Googl.shorten(url)
 		shorturl = urlshortener.short_url
 		shorturl
-	rescue Exception
+	rescue
 		puts "ERROR >> create goo.gl URL"
 		"#{blog}"
 	end
@@ -208,7 +213,7 @@ def manage_radio(driver, station, q) # resume radio & tweet tracks
 
 	puts "Last.fm loaded >> AutoPlay ON"
 	puts "\nEnter \'quit\' at any time..."
-	radiobegin = %x[twurl -d "status=BEGIN #{station} radio #{infotags} #{blog}" "#{tweet}"]
+	radiobegin = %x[twurl -d "status=BEGIN #{station} radio #{infotags} RadioBlog #{blog} on DR3WH0.NET" "#{tweet}"]
 
 	time = Time.new
 	t = time.strftime("%Y-%m-%d")
@@ -225,14 +230,20 @@ def manage_radio(driver, station, q) # resume radio & tweet tracks
 		sleep(60) # poll lfm api every 60 seconds
 		break if q[:user_quit]
 
-		# close 'are you listening' dialog
-		elements = Array.new
-		elements = driver.find_elements(:class, "dialogConfirm")
-		if elements.size > 0
-			element = driver.find_element(:class, "dialogConfirm")
-			element.submit
-			puts "AUTOPLAY  #{station} radio"
-			radioresume = %x[twurl -d "status=AUTOPLAY #{station} radio #{infotags} #{blog}" "#{tweet}"]
+		begin # close 'are you listening' dialog
+			elements = Array.new
+			elements = driver.find_elements(:class, "dialogConfirm")
+			if elements.size > 0
+				element = driver.find_element(:class, "dialogConfirm")
+				element.submit
+				puts "AUTOPLAY  #{station} radio"
+				radioresume = %x[twurl -d "status=AUTOPLAY #{station} radio #{infotags} RadioBlog #{blog} on DR3WH0.NET" "#{tweet}"]
+			end
+
+		rescue Selenium::WebDriver::Error::UnknownError # after Flash crash refresh
+			puts "ERROR >> webdriver error >> restarting #{station} radio"
+			driver.quit
+			driver = load_radio(station)
 		end
 		
 		begin # get most recent track
@@ -352,7 +363,7 @@ def manage_radio(driver, station, q) # resume radio & tweet tracks
 	end
 
 	if num == 1 then t = "track" else t = "tracks" end	
-	radioend = %x[twurl -d "status=END #{station} radio (#{num} #{t}) #{infotags} #{blog}" "#{tweet}"]
+	radioend = %x[twurl -d "status=END #{station} radio (#{num} #{t}) #{infotags} RadioBlog #{blog} on DR3WH0.NET" "#{tweet}"]
 	puts "Last.fm \'#{station}\' Radio (#{num} #{t}) >> Goodbye!"
 	driver.quit
 	exit
